@@ -18,7 +18,8 @@ extension RFC_3986.Error: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidURI(let value):
-            return "Invalid URI: '\(value)'. URIs must have a scheme and contain only ASCII characters."
+            return
+                "Invalid URI: '\(value)'. URIs must have a scheme and contain only ASCII characters."
         case .invalidComponent(let component):
             return "Invalid URI component: '\(component)'"
         case .conversionFailed(let reason):
@@ -40,7 +41,8 @@ extension RFC_3986.Error: LocalizedError {
     public var recoverySuggestion: String? {
         switch self {
         case .invalidURI(let value) where value.contains(where: { !$0.isASCII }):
-            return "Use percent-encoding for non-ASCII characters, or consider using RFC 3987 (IRI) instead"
+            return
+                "Use percent-encoding for non-ASCII characters, or consider using RFC 3987 (IRI) instead"
         case .invalidURI:
             return "Ensure the URI includes a scheme (e.g., https://) and follows RFC 3986 syntax"
         case .invalidComponent:

@@ -138,7 +138,8 @@ extension RFC_3986 {
         while index < string.endIndex {
             if string[index] == "%",
                 let nextIndex = string.index(index, offsetBy: 1, limitedBy: string.endIndex),
-                let thirdIndex = string.index(index, offsetBy: 3, limitedBy: string.endIndex) {
+                let thirdIndex = string.index(index, offsetBy: 3, limitedBy: string.endIndex)
+            {
                 let hexString = String(string[nextIndex..<thirdIndex])
 
                 // Uppercase the hex digits
@@ -186,8 +187,11 @@ extension String {
     /// let encoded = "hello world".percentEncoded()
     /// // "hello%20world"
     /// ```
-    public func percentEncoded(allowing characterSet: CharacterSet = RFC_3986.CharacterSets.unreserved)
-        -> String {
+    public func percentEncoded(
+        allowing characterSet: CharacterSet = RFC_3986.CharacterSets.unreserved
+    )
+        -> String
+    {
         RFC_3986.percentEncode(self, allowing: characterSet)
     }
 
