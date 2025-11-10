@@ -80,8 +80,8 @@ extension RFC_3986 {
         /// process(uri: url)  // Works!
         /// ```
         public protocol Representable {
-            /// The URI as a string
-            var uriString: String { get }
+            /// The URI representation
+            var uri: RFC_3986.URI { get }
         }
 
         /// The URI string
@@ -520,23 +520,32 @@ extension RFC_3986 {
     }
 }
 
+// MARK: - URI.Representable Protocol Extension
+
+extension RFC_3986.URI.Representable {
+    /// The URI as a string (convenience)
+    public var uriString: String {
+        uri.value
+    }
+}
+
 // MARK: - URI.Representable Conformance
 
 extension RFC_3986.URI: RFC_3986.URI.Representable {
-    public var uriString: String {
-        value
+    public var uri: RFC_3986.URI {
+        self
     }
 }
 
 // MARK: - Foundation URL Conformance
 
 extension URL: RFC_3986.URI.Representable {
-    /// The URL as a URI string
+    /// The URL as a URI
     ///
     /// Foundation's URL type uses percent-encoding for non-ASCII characters,
     /// making it compatible with URIs as defined in RFC 3986.
-    public var uriString: String {
-        absoluteString
+    public var uri: RFC_3986.URI {
+        RFC_3986.URI(unchecked: absoluteString)
     }
 }
 
