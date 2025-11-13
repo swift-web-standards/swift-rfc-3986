@@ -36,10 +36,17 @@ struct URIValidationTests {
         #expect(RFC_3986.isValidURI("ftp://ftp.example.com/file.txt"))
     }
 
-    @Test("Invalid URI - no scheme")
-    func invalidNoScheme() {
-        #expect(!RFC_3986.isValidURI("example.com"))
-        #expect(!RFC_3986.isValidURI("/path/to/resource"))
+    @Test("Valid URI - relative references")
+    func validRelativeReferences() {
+        // RFC 3986 Section 4.2: relative references are valid URI references
+        #expect(RFC_3986.isValidURI("/path/to/resource"))
+        #expect(RFC_3986.isValidURI("?query=value"))
+        #expect(RFC_3986.isValidURI("#fragment"))
+        #expect(RFC_3986.isValidURI("../relative/path"))
+
+        // Note: "example.com" without a scheme is technically a valid path (not a host)
+        // per RFC 3986, even though it's ambiguous
+        #expect(RFC_3986.isValidURI("example.com"))
     }
 
     @Test("Invalid URI - empty string")

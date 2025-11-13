@@ -171,16 +171,15 @@ struct ErrorMessagesTests {
         }
     }
 
-    @Test("LocalizedError - invalidURI missing scheme")
-    func localizedErrorInvalidURIMissingScheme() {
+    @Test("LocalizedError - invalidURI with invalid characters")
+    func localizedErrorInvalidURIWithInvalidChars() {
         do {
-            let string = "example.com"
+            let string = "http://example.com/<invalid>"
             _ = try RFC_3986.URI(string)
             Issue.record("Should have thrown an error")
         } catch let error as RFC_3986.Error {
             #expect(error.errorDescription != nil)
             #expect(error.failureReason?.contains("RFC 3986") == true)
-            #expect(error.recoverySuggestion?.contains("scheme") == true)
         } catch {
             Issue.record("Wrong error type")
         }

@@ -81,14 +81,18 @@ struct ReadmeVerificationTests {
         #expect(normalized.value == "https://example.com/path")
     }
 
-    @Test("RFC 3986 Compliance - requires scheme")
-    func complianceRequiresScheme() {
-        // From README example
-        let withScheme = RFC_3986.isValidURI("https://example.com")
-        let withoutScheme = RFC_3986.isValidURI("example.com")
+    @Test("RFC 3986 Compliance - supports relative references")
+    func complianceSupportsRelativeReferences() {
+        // RFC 3986 Section 4.1: URI-reference = URI / relative-ref
+        let absoluteURI = RFC_3986.isValidURI("https://example.com")
+        let relativeRef = RFC_3986.isValidURI("/path/to/resource")
+        let queryRef = RFC_3986.isValidURI("?query=value")
+        let fragmentRef = RFC_3986.isValidURI("#fragment")
 
-        #expect(withScheme == true)
-        #expect(withoutScheme == false)
+        #expect(absoluteURI == true)
+        #expect(relativeRef == true)
+        #expect(queryRef == true)
+        #expect(fragmentRef == true)
     }
 
     @Test("RFC 3986 Compliance - ASCII only")

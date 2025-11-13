@@ -54,11 +54,15 @@ extension RFC_3986.Error: LocalizedError {
 }
 
 extension RFC_3986 {
-    /// A Uniform Resource Identifier (URI) as defined in RFC 3986
+    /// A Uniform Resource Identifier (URI) reference as defined in RFC 3986
     ///
     /// URIs provide a simple and extensible means for identifying a resource.
     /// They use a restricted set of ASCII characters to ensure maximum compatibility
     /// across different systems and protocols.
+    ///
+    /// RFC 3986 Section 4.1 defines a URI-reference as either:
+    /// - An absolute URI with a scheme (e.g., `https://example.com/path`)
+    /// - A relative reference without a scheme (e.g., `/path`, `?query`, `#fragment`)
     ///
     /// RFC 3986 defines a generic syntax consisting of a hierarchical sequence of
     /// five components: scheme, authority, path, query, and fragment.
@@ -469,35 +473,55 @@ extension RFC_3986 {
 
     // MARK: - Validation Functions
 
-    /// Validates if a string is a valid URI
+    /// Validates if a string is a valid URI reference
     ///
     /// This performs basic validation using Foundation's URL validation.
-    /// A valid URI should:
-    /// - Be a valid URL according to Foundation
-    /// - Have a scheme (e.g., http, https, urn, mailto, ftp)
-    /// - Contain only ASCII characters (per RFC 3986)
+    /// A valid URI reference (per RFC 3986 Section 4.1) is either:
+    /// - An absolute URI with a scheme (e.g., `https://example.com/path`)
+    /// - A relative reference without a scheme (e.g., `/path`, `?query`, `#fragment`)
+    ///
+    /// Requirements:
+    /// - Must be parseable as a URL by Foundation
+    /// - Must contain only ASCII characters (per RFC 3986)
+    /// - Must not contain unencoded spaces or other invalid characters
     ///
     /// Note: This is a lenient validation suitable for most use cases.
     /// Full RFC 3986 compliance would require more strict validation
     /// of character ranges and syntax rules.
     ///
     /// - Parameter string: The string to validate
-    /// - Returns: true if the string appears to be a valid URI
+    /// - Returns: true if the string appears to be a valid URI reference
     public static func isValidURI(_ string: String) -> Bool {
-        // Empty strings are not valid URIs
+        // Empty strings are not valid URI references
         guard !string.isEmpty else { return false }
 
-        // URIs must be ASCII-only per RFC 3986
+        // URI references must be ASCII-only per RFC 3986
         // Foundation's URL accepts non-ASCII characters, so we need to check explicitly
         guard string.allSatisfy({ $0.isASCII }) else { return false }
 
-        // Try to create a URL from the string
-        guard let url = URL(string: string) else { return false }
+        // Reject strings with unencoded spaces or control characters
+        if string.contains(" ") || string.rangeOfCharacter(from: .controlCharacters) != nil {
+            return false
+        }
 
-        // URI must have a scheme per RFC 3986
-        guard url.scheme != nil else { return false }
+        // Reject strings with invalid characters like < > { } | \ ^ `
+        let invalidChars = CharacterSet(charactersIn: "<>{}|\\^`\"")
+        if string.rangeOfCharacter(from: invalidChars) != nil {
+            return false
+        }
 
-        return true
+        // Try to create a URL from the string (Foundation URL handles both absolute and relative)
+        // For relative references, we use a dummy base to validate parsing
+        if URL(string: string) != nil {
+            return true
+        }
+
+        // Try parsing as relative reference with a base URL
+        if let _ = URL(string: string, relativeTo: URL(string: "http://example.com")) {
+            return true
+        }
+
+        return false
     }
 
     /// Validates if a URI is a valid HTTP(S) URI
