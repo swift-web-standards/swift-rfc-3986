@@ -479,11 +479,15 @@ extension RFC_3986 {
     /// A valid URI reference (per RFC 3986 Section 4.1) is either:
     /// - An absolute URI with a scheme (e.g., `https://example.com/path`)
     /// - A relative reference without a scheme (e.g., `/path`, `?query`, `#fragment`)
+    /// - An empty string (representing "same document reference")
     ///
     /// Requirements:
     /// - Must be parseable as a URL by Foundation
     /// - Must contain only ASCII characters (per RFC 3986)
     /// - Must not contain unencoded spaces or other invalid characters
+    ///
+    /// Note: Empty strings are allowed as they represent a valid "same document reference"
+    /// commonly used in href attributes and by RFC 6570 URI Template expansion.
     ///
     /// Note: This is a lenient validation suitable for most use cases.
     /// Full RFC 3986 compliance would require more strict validation
@@ -492,8 +496,8 @@ extension RFC_3986 {
     /// - Parameter string: The string to validate
     /// - Returns: true if the string appears to be a valid URI reference
     public static func isValidURI(_ string: String) -> Bool {
-        // Empty strings are not valid URI references
-        guard !string.isEmpty else { return false }
+        // Empty strings are allowed (same document reference)
+        if string.isEmpty { return true }
 
         // URI references must be ASCII-only per RFC 3986
         // Foundation's URL accepts non-ASCII characters, so we need to check explicitly

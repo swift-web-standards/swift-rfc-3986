@@ -49,9 +49,16 @@ struct URIValidationTests {
         #expect(RFC_3986.isValidURI("example.com"))
     }
 
-    @Test("Invalid URI - empty string")
-    func invalidEmpty() {
-        #expect(!RFC_3986.isValidURI(""))
+    @Test("Valid URI - empty string (same document reference)")
+    func validEmptyString() {
+        // Empty strings are valid as "same document reference"
+        // Used in href="" and RFC 6570 expansion with undefined variables
+        #expect(RFC_3986.isValidURI(""))
+
+        // Can create a URI from empty string
+        let uri = try? RFC_3986.URI("")
+        #expect(uri != nil)
+        #expect(uri?.value == "")
     }
 
     @Test("Invalid URI - non-ASCII characters")
