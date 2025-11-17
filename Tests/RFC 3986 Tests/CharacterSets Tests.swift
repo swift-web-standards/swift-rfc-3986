@@ -9,8 +9,7 @@ struct CharacterSetsTests {
     func unreservedCharacters() {
         let unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
         for char in unreserved {
-            let charString = String(char)
-            #expect(charString.rangeOfCharacter(from: RFC_3986.CharacterSets.unreserved) != nil)
+            #expect(RFC_3986.CharacterSets.unreserved.contains(char))
         }
     }
 
@@ -18,8 +17,7 @@ struct CharacterSetsTests {
     func reservedCharacters() {
         let reserved = ":/?#[]@!$&'()*+,;="
         for char in reserved {
-            let charString = String(char)
-            #expect(charString.rangeOfCharacter(from: RFC_3986.CharacterSets.reserved) != nil)
+            #expect(RFC_3986.CharacterSets.reserved.contains(char))
         }
     }
 
@@ -27,8 +25,7 @@ struct CharacterSetsTests {
     func generalDelimiters() {
         let genDelims = ":/?#[]@"
         for char in genDelims {
-            let charString = String(char)
-            #expect(charString.rangeOfCharacter(from: RFC_3986.CharacterSets.genDelims) != nil)
+            #expect(RFC_3986.CharacterSets.genDelims.contains(char))
         }
     }
 
@@ -36,8 +33,7 @@ struct CharacterSetsTests {
     func subDelimiters() {
         let subDelims = "!$&'()*+,;="
         for char in subDelims {
-            let charString = String(char)
-            #expect(charString.rangeOfCharacter(from: RFC_3986.CharacterSets.subDelims) != nil)
+            #expect(RFC_3986.CharacterSets.subDelims.contains(char))
         }
     }
 }

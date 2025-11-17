@@ -156,29 +156,27 @@ struct OperatorsTests {
 @Suite("Developer Delight - Error Messages")
 struct ErrorMessagesTests {
 
-    @Test("LocalizedError - invalidURI with non-ASCII")
-    func localizedErrorInvalidURINonASCII() {
+    @Test("Error description - invalidURI with non-ASCII")
+    func errorDescriptionInvalidURINonASCII() {
         do {
             let string = "https://example.com/寿司"
             _ = try RFC_3986.URI(string)
             Issue.record("Should have thrown an error")
         } catch let error as RFC_3986.Error {
-            #expect(error.errorDescription?.contains("ASCII") == true)
-            #expect(error.recoverySuggestion?.contains("percent-encoding") == true)
+            #expect(error.description.contains("ASCII"))
         } catch {
             Issue.record("Wrong error type")
         }
     }
 
-    @Test("LocalizedError - invalidURI with invalid characters")
-    func localizedErrorInvalidURIWithInvalidChars() {
+    @Test("Error description - invalidURI with invalid characters")
+    func errorDescriptionInvalidURIWithInvalidChars() {
         do {
             let string = "http://example.com/<invalid>"
             _ = try RFC_3986.URI(string)
             Issue.record("Should have thrown an error")
         } catch let error as RFC_3986.Error {
-            #expect(error.errorDescription != nil)
-            #expect(error.failureReason?.contains("RFC 3986") == true)
+            #expect(error.description.contains("RFC 3986"))
         } catch {
             Issue.record("Wrong error type")
         }
