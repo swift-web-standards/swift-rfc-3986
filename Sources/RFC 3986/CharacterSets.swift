@@ -168,23 +168,55 @@ extension RFC_3986 {
         _ string: String,
         allowing allowedCharacters: RFC_3986.CharacterSet = .unreserved
     ) -> String {
-        // Use generic implementation with UPPERCASE hex per RFC 3986
-        String.percentEncoded(
-            string: string,
-            allowing: allowedCharacters.characters,
-            uppercaseHex: true
-        )
+        var result = ""
+        let hexDigits = Array("0123456789ABCDEF")
+
+        for character in string {
+            if allowedCharacters.contains(character) {
+                result.append(character)
+            } else {
+                // Encode as UTF-8 bytes and percent-encode each byte
+                for byte in String(character).utf8 {
+                    result.append("%")
+                    result.append(hexDigits[Int(byte >> 4)])
+                    result.append(hexDigits[Int(byte & 0x0F)])
+                }
+            }
+        }
+        return result
     }
 
     /// Decodes a percent-encoded string according to RFC 3986 Section 2.1
     ///
     /// Replaces percent-encoded octets (`%HH`) with their corresponding characters.
-    /// Delegates to the generic String.percentDecoded from swift-standards.
+    /// Properly handles multi-byte UTF-8 sequences.
     ///
     /// - Parameter string: The percent-encoded string to decode
     /// - Returns: The decoded string
     public static func percentDecode(_ string: String) -> String {
-        String.percentDecoded(string: string)
+        var bytes: [UInt8] = []
+        var index = string.startIndex
+
+        while index < string.endIndex {
+            if string[index] == "%",
+               let nextIndex = string.index(index, offsetBy: 1, limitedBy: string.endIndex),
+               let thirdIndex = string.index(index, offsetBy: 3, limitedBy: string.endIndex)
+            {
+                let hexString = String(string[nextIndex..<thirdIndex])
+                if let byte = UInt8(hexString, radix: 16) {
+                    bytes.append(byte)
+                    index = thirdIndex
+                    continue
+                }
+            }
+            // Not a valid percent-encoded sequence, append the character's UTF-8 bytes
+            for byte in String(string[index]).utf8 {
+                bytes.append(byte)
+            }
+            index = string.index(after: index)
+        }
+
+        return String(decoding: bytes, as: UTF8.self)
     }
 
     /// Normalizes percent-encoding per RFC 3986 Section 6.2.2.2
