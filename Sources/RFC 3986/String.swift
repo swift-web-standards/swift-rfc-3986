@@ -25,6 +25,21 @@ extension String {
         RFC_3986.percentEncode(self, allowing: characterSet)
     }
 
+    /// Decodes a percent-encoded string per RFC 3986
+    ///
+    /// Replaces percent-encoded octets (`%HH`) with their corresponding characters.
+    ///
+    /// Example:
+    /// ```swift
+    /// let decoded = "hello%20world".percentDecoded()
+    /// // "hello world"
+    /// ```
+    ///
+    /// - Returns: The decoded string
+    public func percentDecoded() -> String {
+        RFC_3986.percentDecode(self)
+    }
+
     /// Parses this string as an RFC 3986 URI
     ///
     /// Returns `nil` if the string is not a valid URI.

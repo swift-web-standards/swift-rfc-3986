@@ -105,35 +105,43 @@ struct `String uri property` {
 struct `String percent encoding` {
 
     @Test
-    func `swift-standards defaults to lowercase hex`() {
-        let input = "hello world"
-        let encoded = input.percentEncoded(allowing: Set("abcdefghijklmnopqrstuvwxyz"))
-
-        // swift-standards default is lowercase
-        #expect(encoded.contains("%20"))
-        // This is testing the generic implementation, which uses lowercase by default
-    }
-
-    @Test
-    func `swift-standards supports uppercase via parameter`() {
-        let input = "hello world"
-        let encoded = String.percentEncoded(
-            string: input,
-            allowing: Set("abcdefghijklmnopqrstuvwxyz"),
-            uppercaseHex: true
-        )
-
-        #expect(encoded.contains("%20"))
-        #expect(!encoded.contains("%2a"))
-    }
-
-    @Test
-    func `RFC CharacterSet overload uses uppercase`() {
+    func `RFC 3986 percent encoding uses uppercase hex`() {
         let input = "hello?world"
         let encoded = input.percentEncoded(allowing: .unreserved)
 
-        // Should use UPPERCASE (RFC default)
+        // RFC 3986 uses UPPERCASE hex per Section 6.2.2.2
         #expect(encoded.contains("%3F"))  // Uppercase F
         #expect(!encoded.contains("%3f"))  // No lowercase f
+    }
+
+    @Test
+    func `Percent encoding preserves unreserved characters`() {
+        let unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+        let encoded = unreserved.percentEncoded(allowing: .unreserved)
+
+        // Unreserved characters should not be encoded
+        #expect(encoded == unreserved)
+    }
+
+    @Test
+    func `Percent encoding encodes reserved characters`() {
+        let input = "hello world!@#$%"
+        let encoded = input.percentEncoded(allowing: .unreserved)
+
+        // Space and special characters should be encoded
+        #expect(encoded.contains("%20"))  // space
+        #expect(encoded.contains("%21"))  // !
+        #expect(encoded.contains("%40"))  // @
+        #expect(encoded.contains("%23"))  // #
+        #expect(encoded.contains("%24"))  // $
+        #expect(encoded.contains("%25"))  // %
+    }
+
+    @Test
+    func `Percent decoding handles multi-byte UTF-8`() {
+        let encoded = "caf%C3%A9"  // café
+        let decoded = encoded.percentDecoded()
+
+        #expect(decoded == "café")
     }
 }
