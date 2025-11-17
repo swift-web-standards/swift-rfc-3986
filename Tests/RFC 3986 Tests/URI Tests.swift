@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 
 @testable import RFC_3986
@@ -243,31 +242,8 @@ struct URIComponentParsingTests {
     }
 }
 
-@Suite("URL Conformance to URI.Representable")
-struct URLURIConformanceTests {
-
-    @Test("URL conforms to URI.Representable")
-    func urlConformsToURI() {
-        let url = URL(string: "https://example.com/path")!
-        let uri: any RFC_3986.URI.Representable = url
-        #expect(uri.uri.value == "https://example.com/path")
-    }
-
-    @Test("URL with percent-encoded characters")
-    func urlWithPercentEncoded() {
-        let url = URL(string: "https://example.com/%E5%AF%BF%E5%8F%B8")!
-        #expect(url.uri.value.contains("%E5%AF%BF%E5%8F%B8"))
-    }
-
-    @Test("URL can be validated as HTTP URI")
-    func urlValidation() {
-        let httpURL = URL(string: "https://example.com")!
-        let ftpURL = URL(string: "ftp://example.com")!
-
-        #expect(RFC_3986.isValidHTTP(httpURL))
-        #expect(!RFC_3986.isValidHTTP(ftpURL))
-    }
-}
+// NOTE: URL conformance tests removed - URL conformance moved to coenttb/swift-uri (Phase 3)
+// See /Users/coen/Developer/URI_ARCHITECTURE_PLAN.md for details
 
 @Suite("Path Normalization Algorithm")
 struct PathNormalizationTests {

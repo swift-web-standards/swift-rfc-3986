@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 
 @testable import RFC_3986
@@ -23,28 +22,7 @@ struct ReadmeVerificationTests {
         #expect(validatedURI.value == "https://example.com/path")
     }
 
-    @Test("Using Foundation URL - URI.Representable conformance")
-    func foundationURLConformance() {
-        // From README example
-        let url = URL(string: "https://example.com")!
-
-        // URL conforms to URI.Representable
-        func process(uri: any RFC_3986.URI.Representable) -> String {
-            return uri.uri.value
-        }
-
-        let result = process(uri: url)
-        #expect(result == "https://example.com")
-    }
-
-    @Test("Using Foundation URL - HTTP validation")
-    func foundationURLHTTPValidation() {
-        // From README example
-        let url = URL(string: "https://example.com")!
-        let isValid = RFC_3986.isValidHTTP(url)
-
-        #expect(isValid == true)
-    }
+    // NOTE: URL conformance tests removed - URL conformance moved to coenttb/swift-uri (Phase 3)
 
     @Test("Validation - validate URI string")
     func validationURIString() {
@@ -62,14 +40,7 @@ struct ReadmeVerificationTests {
         #expect(isValid == true)
     }
 
-    @Test("Validation - validate URI.Representable types")
-    func validationRepresentableTypes() {
-        // From README example
-        let url = URL(string: "https://example.com")!
-        let isValid = RFC_3986.isValidHTTP(url)
-
-        #expect(isValid == true)
-    }
+    // NOTE: URL-based validation test removed - URL conformance moved to coenttb/swift-uri (Phase 3)
 
     @Test("Normalization example")
     func normalizationExample() throws {
@@ -114,15 +85,7 @@ struct ReadmeVerificationTests {
         #expect(uri.value.contains("%E5%AF%BF%E5%8F%B8"))
     }
 
-    @Test("Protocol-based design - URI.Representable")
-    func protocolBasedDesign() {
-        // From README example
-        let url = URL(string: "https://test.com")!
-
-        // URL should conform to URI.Representable
-        let representable: any RFC_3986.URI.Representable = url
-        #expect(representable.uri.value == "https://test.com")
-    }
+    // NOTE: URL-based protocol test removed - URL conformance moved to coenttb/swift-uri (Phase 3)
 
     @Test("Component parsing - scheme")
     func componentParsingScheme() throws {

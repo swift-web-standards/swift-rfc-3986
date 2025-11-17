@@ -1,4 +1,3 @@
-import Foundation
 import Testing
 
 @testable import RFC_3986
@@ -190,12 +189,8 @@ struct URIResolutionTests {
         #expect(!absoluteURI.isRelative)
 
         let relativeString = "/path/to/resource"
-        // Foundation URL requires a scheme, so we create it differently
-        var relativeComponents = URLComponents()
-        relativeComponents.path = relativeString
-        if let urlString = relativeComponents.string {
-            // This will be relative (no scheme)
-            #expect(urlString.hasPrefix("/"))
-        }
+        let relativeURI = try RFC_3986.URI(relativeString)
+        #expect(relativeURI.isRelative)
+        #expect(relativeURI.scheme == nil)
     }
 }
