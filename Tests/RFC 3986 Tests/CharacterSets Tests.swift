@@ -190,3 +190,21 @@ struct URIResolutionTests {
         #expect(relativeURI.scheme == nil)
     }
 }
+
+@Suite("Set<Character> URI Namespace")
+struct SetCharacterURINamespaceTests {
+
+    @Test("URI namespace syntax works")
+    func uriNamespaceSyntax() {
+        // Test that .uri.reserved syntax works and matches the canonical source
+        let reserved: Set<Character> = .uri.reserved
+        #expect(reserved == RFC_3986.CharacterSets.reserved)
+
+        // Test a few other properties to ensure the namespace works correctly
+        let unreserved: Set<Character> = .uri.unreserved
+        #expect(unreserved == RFC_3986.CharacterSets.unreserved)
+
+        let query: Set<Character> = .uri.query
+        #expect(query == RFC_3986.CharacterSets.query)
+    }
+}
