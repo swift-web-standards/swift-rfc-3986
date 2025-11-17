@@ -88,8 +88,60 @@ extension RFC_3986 {
             var uri: RFC_3986.URI { get }
         }
 
+        // MARK: - Internal Cache
+
+        /// Internal cache for parsed URI components
+        ///
+        /// Uses a class for reference semantics, enabling lazy caching while maintaining
+        /// value semantics for the URI struct. Components are parsed once on first access
+        /// and cached for O(1) subsequent access.
+        ///
+        /// This is marked @unchecked Sendable because:
+        /// - The cache is immutable after initialization
+        /// - Lazy properties are thread-safe in Swift
+        /// - Multiple URI copies share the same cache (COW-like behavior)
+        private final class Cache: @unchecked Sendable {
+            let value: String
+            let urlComponents: URLComponents?
+
+            // Lazy cached components - parsed once on first access
+            lazy var scheme: Scheme? = {
+                urlComponents?.scheme.flatMap { try? Scheme($0) }
+            }()
+
+            lazy var host: Host? = {
+                urlComponents?.host.flatMap { try? Host($0) }
+            }()
+
+            lazy var port: Port? = {
+                urlComponents?.port.flatMap { Port(UInt16($0)) }
+            }()
+
+            lazy var path: Path? = {
+                guard let pathString = urlComponents?.path else { return nil }
+                return try? Path(pathString)
+            }()
+
+            lazy var query: Query? = {
+                urlComponents?.query.flatMap { try? Query($0) }
+            }()
+
+            init(value: String) {
+                self.value = value
+
+                // Parse URLComponents once at initialization
+                if let url = URL(string: value) {
+                    self.urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
+                } else {
+                    self.urlComponents = nil
+                }
+            }
+        }
+
+        private let cache: Cache
+
         /// The URI string
-        public let value: String
+        public var value: String { cache.value }
 
         /// Creates a URI from a string with validation
         ///
@@ -99,7 +151,7 @@ extension RFC_3986 {
             guard RFC_3986.isValidURI(value) else {
                 throw RFC_3986.Error.invalidURI(value)
             }
-            self.value = value
+            self.cache = Cache(value: value)
         }
 
         /// Creates a URI from a string without validation
@@ -119,7 +171,65 @@ extension RFC_3986 {
         /// let uri = RFC_3986.URI(unchecked: "/users/123")
         /// ```
         public init(unchecked value: String) {
-            self.value = value
+            self.cache = Cache(value: value)
+        }
+
+        /// Creates a URI from validated RFC 3986 component types
+        ///
+        /// This initializer constructs a URI from typed components. Since all components
+        /// are already validated RFC types, this cannot fail.
+        ///
+        /// - Parameters:
+        ///   - scheme: The URI scheme
+        ///   - authority: The authority component (userinfo, host, port)
+        ///   - path: The path component
+        ///   - query: The query component
+        ///   - fragment: The fragment component
+        ///
+        /// Example:
+        /// ```swift
+        /// let uri = RFC_3986.URI(
+        ///     scheme: try .init("https"),
+        ///     authority: .init(
+        ///         userinfo: nil,
+        ///         host: try .init("example.com"),
+        ///         port: .init(443)
+        ///     ),
+        ///     path: try .init("/path"),
+        ///     query: try .init("key=value"),
+        ///     fragment: nil
+        /// )
+        /// ```
+        public init(
+            scheme: Scheme,
+            authority: Authority,
+            path: Path,
+            query: Query? = nil,
+            fragment: String? = nil
+        ) {
+            var uriString = "\(scheme.value)://"
+
+            if let userinfo = authority.userinfo {
+                uriString += "\(userinfo.rawValue)@"
+            }
+
+            uriString += authority.host.rawValue
+
+            if let port = authority.port {
+                uriString += ":\(port.value)"
+            }
+
+            uriString += path.string
+
+            if let query = query {
+                uriString += "?\(query.string)"
+            }
+
+            if let fragment = fragment {
+                uriString += "#\(fragment)"
+            }
+
+            self.cache = Cache(value: uriString)
         }
 
         /// Returns a normalized version of this URI
@@ -238,10 +348,7 @@ extension RFC_3986 {
         ///
         /// - Returns: URLComponents if the URI can be parsed, nil otherwise
         public var components: URLComponents? {
-            guard let url = URL(string: value) else {
-                return nil
-            }
-            return URLComponents(url: url, resolvingAgainstBaseURL: false)
+            cache.urlComponents
         }
 
         /// The scheme component of this URI
@@ -250,40 +357,73 @@ extension RFC_3986 {
         /// and is followed by a colon. Scheme names consist of a sequence of characters
         /// beginning with a letter and followed by any combination of letters, digits,
         /// plus (+), period (.), or hyphen (-).
-        public var scheme: String? {
-            components?.scheme
+        ///
+        /// Components are lazily parsed and cached for O(1) access after first use.
+        public var scheme: Scheme? {
+            cache.scheme
+        }
+
+        /// The userinfo component of this URI
+        ///
+        /// Per RFC 3986 Section 3.2.1, the userinfo subcomponent may consist of
+        /// a user name and, optionally, scheme-specific information about how to
+        /// gain authorization to access the resource. The userinfo, if present,
+        /// is followed by a commercial at-sign ("@") that delimits it from the host.
+        ///
+        /// Note: The userinfo component is deprecated per RFC 3986 Section 3.2.1
+        /// for security reasons (passwords in URIs are insecure), but is still
+        /// part of the URI syntax for compatibility.
+        public var userinfo: Userinfo? {
+            guard let urlComponents = cache.urlComponents else { return nil }
+
+            // URLComponents stores user and password separately
+            return urlComponents.user
+                .map { user in
+                    urlComponents.password
+                        .map { "\(user):\($0)" }
+                        ?? user
+                }
+                .flatMap { try? Userinfo.init($0) }
         }
 
         /// The host component of this URI
         ///
         /// Per RFC 3986 Section 3.2.2, the host is identified by an IP literal,
         /// IPv4 address, or registered name.
-        public var host: String? {
-            components?.host
+        ///
+        /// Components are lazily parsed and cached for O(1) access after first use.
+        public var host: Host? {
+            cache.host
         }
 
         /// The port component of this URI
         ///
         /// Per RFC 3986 Section 3.2.3, the port is designated by an optional decimal
         /// port number following the host and delimited from it by a colon.
-        public var port: Int? {
-            components?.port
+        ///
+        /// Components are lazily parsed and cached for O(1) access after first use.
+        public var port: Port? {
+            cache.port
         }
 
         /// The path component of this URI
         ///
         /// Per RFC 3986 Section 3.3, the path contains data that identifies a resource
         /// within the scope of the URI's scheme and authority.
-        public var path: String? {
-            components?.path
+        ///
+        /// Components are lazily parsed and cached for O(1) access after first use.
+        public var path: Path? {
+            cache.path
         }
 
         /// The query component of this URI
         ///
         /// Per RFC 3986 Section 3.4, the query contains non-hierarchical data that
         /// identifies a resource in conjunction with the scheme and authority.
-        public var query: String? {
-            components?.query
+        ///
+        /// Components are lazily parsed and cached for O(1) access after first use.
+        public var query: Query? {
+            cache.query
         }
 
         /// The fragment component of this URI
@@ -291,20 +431,20 @@ extension RFC_3986 {
         /// Per RFC 3986 Section 3.5, the fragment allows indirect identification
         /// of a secondary resource by reference to a primary resource.
         public var fragment: String? {
-            components?.fragment
+            cache.urlComponents?.fragment
         }
 
         // MARK: - Convenience Properties
 
         /// Returns `true` if this URI uses a secure scheme (https, wss, etc.)
         public var isSecure: Bool {
-            guard let uriScheme = scheme?.lowercased() else { return false }
+            guard let uriScheme = scheme?.value else { return false }
             return ["https", "wss", "ftps"].contains(uriScheme)
         }
 
         /// Returns `true` if this URI is an HTTP or HTTPS URI
         public var isHTTP: Bool {
-            guard let uriScheme = scheme?.lowercased() else { return false }
+            guard let uriScheme = scheme?.value else { return false }
             return uriScheme == "http" || uriScheme == "https"
         }
 
@@ -312,14 +452,13 @@ extension RFC_3986 {
         ///
         /// Example: `https://example.com:8080/path?query#fragment` → `https://example.com:8080`
         public var base: URI? {
-            guard let urlComponents = components,
-                let uriScheme = urlComponents.scheme,
-                let uriHost = urlComponents.host
+            guard let uriScheme = scheme,
+                  let uriHost = host
             else { return nil }
 
-            var baseString = "\(uriScheme)://\(uriHost)"
-            if let uriPort = urlComponents.port {
-                baseString += ":\(uriPort)"
+            var baseString = "\(uriScheme.value)://\(uriHost.rawValue)"
+            if let uriPort = port {
+                baseString += ":\(uriPort.value)"
             }
             return URI(unchecked: baseString)
         }
@@ -330,9 +469,9 @@ extension RFC_3986 {
         public var pathAndQuery: String? {
             guard let uriPath = path else { return nil }
             if let uriQuery = query {
-                return "\(uriPath)?\(uriQuery)"
+                return "\(uriPath.string)?\(uriQuery.string)"
             }
-            return uriPath
+            return uriPath.string
         }
 
         // MARK: - Convenience Methods
@@ -395,6 +534,40 @@ extension RFC_3986 {
             }
 
             return URI(unchecked: url.absoluteString)
+        }
+
+        // MARK: - Equatable
+
+        /// Compare URIs based on their string values
+        ///
+        /// Two URIs are considered equal if their string representations are identical.
+        /// The cache is not considered for equality.
+        public static func == (lhs: URI, rhs: URI) -> Bool {
+            lhs.value == rhs.value
+        }
+
+        // MARK: - Hashable
+
+        /// Hash based on the URI string value
+        ///
+        /// The cache is not included in the hash.
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(value)
+        }
+
+        // MARK: - Codable
+
+        /// Decode a URI from a string
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            try self.init(string)
+        }
+
+        /// Encode the URI as a string
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            try container.encode(value)
         }
 
         // MARK: - Operators

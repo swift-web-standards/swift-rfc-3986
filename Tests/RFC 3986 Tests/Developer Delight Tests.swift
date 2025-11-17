@@ -92,12 +92,12 @@ struct ConvenienceAPIsTests {
     func appendingQueryItem() throws {
         let base = try RFC_3986.URI("https://example.com/path")
         let withQuery = try base.appendingQueryItem(name: "key", value: "value")
-        #expect(withQuery.query?.contains("key=value") == true)
+        #expect(withQuery.query?.string.contains("key=value") == true)
 
         // Append another
         let withTwoQueries = try withQuery.appendingQueryItem(name: "foo", value: "bar")
-        #expect(withTwoQueries.query?.contains("key=value") == true)
-        #expect(withTwoQueries.query?.contains("foo=bar") == true)
+        #expect(withTwoQueries.query?.string.contains("key=value") == true)
+        #expect(withTwoQueries.query?.string.contains("foo=bar") == true)
     }
 
     @Test("settingFragment()")
@@ -227,8 +227,8 @@ struct FluentChainsTests {
             .settingFragment("results")
 
         #expect(uri.value.contains("/api/users"))
-        #expect(uri.query?.contains("page=1") == true)
-        #expect(uri.query?.contains("limit=10") == true)
+        #expect(uri.query?.string.contains("page=1") == true)
+        #expect(uri.query?.string.contains("limit=10") == true)
         #expect(uri.fragment == "results")
     }
 
