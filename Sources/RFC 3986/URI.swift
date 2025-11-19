@@ -265,7 +265,7 @@ extension RFC_3986.URI {
     ///   the throwing initializer to make the risk explicit.
     ///
     /// - Parameter value: The URI reference string (must be valid, not validated)
-    internal init(unchecked value: String) {
+    public init(unchecked value: String) {
         self.cache = Cache(value: value)
     }
 
