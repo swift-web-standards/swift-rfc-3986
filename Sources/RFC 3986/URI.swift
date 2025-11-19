@@ -943,7 +943,7 @@ extension RFC_3986.URI: CustomStringConvertible {
 
 extension RFC_3986.URI: CustomDebugStringConvertible {
     public var debugDescription: String {
-        var parts: [String] = ["RFC_3986.URI"]
+        var parts: [String] = ["RFC 3986.URI"]
 
         if let scheme = scheme {
             parts.append("scheme: \(scheme)")
