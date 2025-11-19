@@ -1,3 +1,4 @@
+import INCITS_4_1986
 
 // MARK: - URI Scheme
 
@@ -49,10 +50,10 @@ extension RFC_3986.URI.Scheme {
             throw RFC_3986.Error.invalidComponent("Scheme cannot be empty")
         }
 
-        // Validate first character is a letter
-        guard value.first?.isLetter == true else {
+        // Validate first character is an ASCII letter per RFC 3986 Section 3.1
+        guard value.first?.isASCIILetter == true else {
             throw RFC_3986.Error.invalidComponent(
-                "Scheme must start with a letter, got: \(value)"
+                "Scheme must start with an ASCII letter, got: \(value)"
             )
         }
 

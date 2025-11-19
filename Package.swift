@@ -17,13 +17,15 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-standards/swift-standards", from: "0.1.0")
+        .package(url: "https://github.com/swift-standards/swift-standards", from: "0.1.0"),
+        .package(path: "../swift-incits-4-1986")
     ],
     targets: [
         .target(
             name: "RFC 3986",
             dependencies: [
-                .product(name: "Standards", package: "swift-standards")
+                .product(name: "Standards", package: "swift-standards"),
+                .product(name: "INCITS 4 1986", package: "swift-incits-4-1986")
             ]
         ),
         .testTarget(
