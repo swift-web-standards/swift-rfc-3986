@@ -50,7 +50,7 @@ extension RFC_3986.URI {
         /// let fragment = try RFC_3986.URI.Fragment("section-1")
         /// let heading = try RFC_3986.URI.Fragment("introduction")
         /// ```
-        public init(_ value: String) throws {
+        public init(_ value: some StringProtocol) throws {
             // Basic validation - check for obviously invalid characters
             // Full validation would check against: *( pchar / "/" / "?" )
             if value.contains(where: { $0.isNewline }) {
@@ -62,7 +62,7 @@ extension RFC_3986.URI {
                 throw RFC_3986.Error.invalidComponent("Fragment cannot contain '#' character")
             }
 
-            self.value = value
+            self.value = String(value)
         }
 
         /// Creates a fragment without validation
@@ -118,13 +118,13 @@ extension RFC_3986.URI.Fragment: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Fragment: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         try self.init(string)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(value)
     }

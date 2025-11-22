@@ -92,14 +92,14 @@ extension RFC_3986.URI {
         ///
         /// - Parameter string: The path string (e.g., "/users/123" or "docs/file.txt")
         /// - Throws: `RFC_3986.Error.invalidComponent` if the path is invalid
-        public init(_ string: String) throws {
+        public init(_ string: some StringProtocol) throws {
             if string.isEmpty {
                 self.init(unchecked: [], isAbsolute: false)
                 return
             }
 
             let isAbsolute = string.hasPrefix("/")
-            let pathString = isAbsolute ? String(string.dropFirst()) : string
+            let pathString = isAbsolute ? String(string.dropFirst()) : String(string)
 
             if pathString.isEmpty {
                 // Path is just "/"
@@ -141,9 +141,9 @@ extension RFC_3986.URI {
         /// - Parameter segment: The segment to append
         /// - Returns: A new path with the segment appended
         /// - Throws: `RFC_3986.Error.invalidComponent` if the segment is invalid
-        public func appending(_ segment: String) throws -> Path {
+        public func appending(_ segment: some StringProtocol) throws -> Path {
             var newSegments = segments
-            newSegments.append(segment)
+            newSegments.append(String(segment))
             return try Path(segments: newSegments, isAbsolute: isAbsolute)
         }
 
@@ -230,13 +230,13 @@ extension RFC_3986.URI.Path: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Path: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         try self.init(string)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(string)
     }

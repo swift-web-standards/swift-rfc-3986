@@ -55,11 +55,12 @@ extension RFC_3986.URI.Userinfo {
     /// ```swift
     /// let userinfo = try RFC_3986.URI.Userinfo("user:password")
     /// ```
-    public init(_ rawValue: String) throws {
+    public init(_ rawValue: some StringProtocol) throws {
         // Validate that userinfo contains only allowed characters
         // Per RFC 3986: unreserved / pct-encoded / sub-delims / ":"
-        try Self.validate(rawValue)
-        self.rawValue = rawValue
+        let stringValue = String(rawValue)
+        try Self.validate(stringValue)
+        self.rawValue = stringValue
     }
 
     /// Creates a userinfo component without validation
@@ -178,13 +179,13 @@ extension RFC_3986.URI.Userinfo: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Userinfo: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         try self.init(string)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
     }

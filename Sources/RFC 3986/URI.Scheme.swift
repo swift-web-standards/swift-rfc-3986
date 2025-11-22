@@ -44,14 +44,14 @@ extension RFC_3986.URI.Scheme {
     /// Per RFC 3986 Section 3.1, a scheme must:
     /// - Start with a letter (ALPHA)
     /// - Contain only letters, digits, +, -, or .
-    public init(_ value: String) throws {
+    public init(_ value: some StringProtocol) throws {
         // Validate non-empty
         guard !value.isEmpty else {
             throw RFC_3986.Error.invalidComponent("Scheme cannot be empty")
         }
 
         // Validate first character is an ASCII letter per RFC 3986 Section 3.1
-        guard value.first?.isASCIILetter == true else {
+        guard value.first?.ascii.isLetter == true else {
             throw RFC_3986.Error.invalidComponent(
                 "Scheme must start with an ASCII letter, got: \(value)"
             )
@@ -65,7 +65,7 @@ extension RFC_3986.URI.Scheme {
         }
 
         // Normalize to lowercase per RFC 3986 Section 6.2.2.1
-        self.value = value.lowercased()
+        self.value = String(value).lowercased()
     }
 
     /// Creates a scheme without validation
@@ -154,13 +154,13 @@ extension RFC_3986.URI.Scheme: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Scheme: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         try self.init(string)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(value)
     }

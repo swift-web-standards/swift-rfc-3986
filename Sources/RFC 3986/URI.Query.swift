@@ -85,7 +85,7 @@ extension RFC_3986.URI {
         ///
         /// Parses query strings in the form "key1=value1&key2=value2".
         /// Supports keys without values ("flag" in "?flag&other=value").
-        public init(_ string: String) throws {
+        public init(_ string: some StringProtocol) throws {
             guard !string.isEmpty else {
                 self.init(unchecked: [])
                 return
@@ -144,7 +144,7 @@ extension RFC_3986.URI {
         ///
         /// - Parameter key: The parameter key to look up
         /// - Returns: The first value for that key, or nil if not found
-        public func first(for key: String) -> String? {
+        public func first(for key: some StringProtocol) -> String? {
             parameters.first { $0.key == key }?.value ?? nil
         }
 
@@ -155,9 +155,9 @@ extension RFC_3986.URI {
         ///   - value: The parameter value (nil for keys without values)
         /// - Returns: A new query with the parameter added
         /// - Throws: `RFC_3986.Error.invalidComponent` if the parameter is invalid
-        public func appending(key: String, value: String?) throws -> Query {
+        public func appending(key: some StringProtocol, value: (some StringProtocol)?) throws -> Query {
             var newParameters = parameters
-            newParameters.append((key, value))
+            newParameters.append((String(key), value.map { String($0) }))
             return try Query(newParameters)
         }
 
@@ -165,7 +165,7 @@ extension RFC_3986.URI {
         ///
         /// - Parameter key: The parameter key to remove
         /// - Returns: A new query without parameters matching the key
-        public func removing(key: String) -> Query {
+        public func removing(key: some StringProtocol) -> Query {
             let filtered = parameters.filter { $0.key != key }
             return Query(unchecked: filtered)
         }
@@ -267,13 +267,13 @@ extension RFC_3986.URI.Query: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Query: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         try self.init(string)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(string)
     }

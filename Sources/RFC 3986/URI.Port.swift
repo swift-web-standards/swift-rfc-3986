@@ -151,13 +151,13 @@ extension RFC_3986.URI.Port: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Port: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let value = try container.decode(UInt16.self)
         self.init(value)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(value)
     }

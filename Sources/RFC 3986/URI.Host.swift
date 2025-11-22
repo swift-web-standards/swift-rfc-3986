@@ -49,14 +49,16 @@ extension RFC_3986.URI.Host {
     ///
     /// This initializer automatically detects whether the input is an IPv4 address,
     /// IPv6 address (in brackets), or a registered name.
-    public init(_ string: String) throws {
+    public init(_ string: some StringProtocol) throws {
         guard !string.isEmpty else {
             throw RFC_3986.Error.invalidComponent("Host cannot be empty")
         }
 
+        let stringValue = String(string)
+
         // Check for IPv6 (enclosed in brackets)
-        if string.hasPrefix("[") && string.hasSuffix("]") {
-            let ipv6 = String(string.dropFirst().dropLast())
+        if stringValue.hasPrefix("[") && stringValue.hasSuffix("]") {
+            let ipv6 = String(stringValue.dropFirst().dropLast())
             guard Self.isValidIPv6(ipv6) else {
                 throw RFC_3986.Error.invalidComponent(
                     "Invalid IPv6 address: \(ipv6)"
@@ -67,21 +69,21 @@ extension RFC_3986.URI.Host {
         }
 
         // Check for IPv4
-        if Self.isValidIPv4(string) {
-            self = .ipv4(string)
+        if Self.isValidIPv4(stringValue) {
+            self = .ipv4(stringValue)
             return
         }
 
         // Otherwise treat as registered name
         // Validate registered name characters
-        guard Self.isValidRegisteredName(string) else {
+        guard Self.isValidRegisteredName(stringValue) else {
             throw RFC_3986.Error.invalidComponent(
-                "Invalid registered name: \(string)"
+                "Invalid registered name: \(stringValue)"
             )
         }
 
         // Normalize to lowercase per RFC 3986 Section 6.2.2.1
-        self = .registeredName(string.lowercased())
+        self = .registeredName(stringValue.lowercased())
     }
 
     /// Creates a host without validation
@@ -184,13 +186,13 @@ extension RFC_3986.URI.Host: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Host: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         try self.init(string)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
     }

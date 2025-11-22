@@ -40,6 +40,7 @@ extension RFC_3986.URI {
         /// The use of userinfo in URIs is deprecated for security reasons.
         /// Per RFC 3986, applications should not render userinfo subcomponents
         /// unless the data is masked.
+        @available(*, deprecated, message: "deprecated for security reasons")
         public let userinfo: Userinfo?
 
         /// The host component (domain, IPv4, or IPv6)
@@ -72,8 +73,8 @@ extension RFC_3986.URI.Authority {
     ///
     /// This parses an authority string in the form:
     /// `[userinfo@]host[:port]`
-    public init(_ string: String) throws {
-        var remaining = string
+    public init(_ string: some StringProtocol) throws {
+        var remaining = String(string)
 
         // Extract userinfo if present (before @)
         let userinfo: RFC_3986.URI.Userinfo?
@@ -156,13 +157,6 @@ extension RFC_3986.URI.Authority {
 
         return result
     }
-
-    /// Returns true if this authority contains deprecated userinfo
-    ///
-    /// Per RFC 3986 Section 3.2.1, the use of userinfo in URIs is deprecated.
-    public var hasUserinfo: Bool {
-        userinfo != nil
-    }
 }
 
 // MARK: - CustomStringConvertible
@@ -176,13 +170,13 @@ extension RFC_3986.URI.Authority: CustomStringConvertible {
 // MARK: - Codable
 
 extension RFC_3986.URI.Authority: Codable {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         try self.init(string)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
     }
