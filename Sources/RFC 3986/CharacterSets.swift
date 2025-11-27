@@ -46,7 +46,9 @@ extension RFC_3986 {
         }
 
         @discardableResult
-        public mutating func insert(_ newMember: Character) -> (inserted: Bool, memberAfterInsert: Character) {
+        public mutating func insert(
+            _ newMember: Character
+        ) -> (inserted: Bool, memberAfterInsert: Character) {
             characters.insert(newMember)
         }
 
@@ -75,7 +77,7 @@ extension RFC_3986 {
 }
 
 extension RFC_3986.CharacterSet {
-    
+
     /// Unreserved characters per RFC 3986 Section 2.3
     ///
     /// Characters that can appear unencoded in URIs:
@@ -83,10 +85,12 @@ extension RFC_3986.CharacterSet {
     ///
     /// URIs that differ only in the replacement of unreserved characters
     /// with their percent-encoded equivalents are considered equivalent.
-    public static let unreserved: Self = .init(Set(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
-    ))
-    
+    public static let unreserved: Self = .init(
+        Set(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+        )
+    )
+
     /// Reserved characters per RFC 3986 Section 2.2
     ///
     /// Characters that serve as delimiters in URIs:
@@ -94,33 +98,41 @@ extension RFC_3986.CharacterSet {
     ///
     /// These should be percent-encoded when representing data
     /// rather than serving as delimiters.
-    public static let reserved: Self = .init(Set(
-        ":/?#[]@!$&'()*+,;="
-    ))
-    
+    public static let reserved: Self = .init(
+        Set(
+            ":/?#[]@!$&'()*+,;="
+        )
+    )
+
     /// General delimiters (subset of reserved) per RFC 3986 Section 2.2
     ///
     /// Characters: `: / ? # [ ] @`
-    public static let genDelims: Self = .init(Set(
-        ":/?#[]@"
-    ))
-    
+    public static let genDelims: Self = .init(
+        Set(
+            ":/?#[]@"
+        )
+    )
+
     /// Sub-delimiters (subset of reserved) per RFC 3986 Section 2.2
     ///
     /// Characters: `! $ & ' ( ) * + , ; =`
-    public static let subDelims: Self = .init(Set(
-        "!$&'()*+,;="
-    ))
-    
+    public static let subDelims: Self = .init(
+        Set(
+            "!$&'()*+,;="
+        )
+    )
+
     /// Characters allowed in a URI scheme per RFC 3986 Section 3.1
     ///
     /// Scheme names consist of a sequence of characters beginning with a letter
     /// and followed by any combination of letters, digits, plus (`+`), period (`.`),
     /// or hyphen (`-`).
-    public static let scheme: Self = .init(Set(
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+.-"
-    ))
-    
+    public static let scheme: Self = .init(
+        Set(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+.-"
+        )
+    )
+
     /// Characters allowed in userinfo per RFC 3986 Section 3.2.1
     ///
     /// Userinfo may consist of unreserved characters, percent-encoded octets,
@@ -148,8 +160,6 @@ extension RFC_3986.CharacterSet {
     /// Fragment characters are the same as query characters.
     public static let fragment: Self = query
 }
-
-
 
 // MARK: - RFC 3986 Percent Encoding Functions
 
@@ -199,8 +209,8 @@ extension RFC_3986 {
 
         while index < string.endIndex {
             if string[index] == "%",
-               let nextIndex = string.index(index, offsetBy: 1, limitedBy: string.endIndex),
-               let thirdIndex = string.index(index, offsetBy: 3, limitedBy: string.endIndex)
+                let nextIndex = string.index(index, offsetBy: 1, limitedBy: string.endIndex),
+                let thirdIndex = string.index(index, offsetBy: 3, limitedBy: string.endIndex)
             {
                 let hexString = String(string[nextIndex..<thirdIndex])
                 if let byte = UInt8(hexString, radix: 16) {
@@ -232,8 +242,8 @@ extension RFC_3986 {
 
         while index < string.endIndex {
             if string[index] == "%",
-               let nextIndex = string.index(index, offsetBy: 1, limitedBy: string.endIndex),
-               let thirdIndex = string.index(index, offsetBy: 3, limitedBy: string.endIndex)
+                let nextIndex = string.index(index, offsetBy: 1, limitedBy: string.endIndex),
+                let thirdIndex = string.index(index, offsetBy: 3, limitedBy: string.endIndex)
             {
                 let hexString = String(string[nextIndex..<thirdIndex])
 
@@ -268,4 +278,3 @@ extension RFC_3986 {
         return result
     }
 }
-

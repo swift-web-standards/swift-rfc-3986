@@ -1,4 +1,3 @@
-
 // MARK: - URI Authority
 
 extension RFC_3986.URI {

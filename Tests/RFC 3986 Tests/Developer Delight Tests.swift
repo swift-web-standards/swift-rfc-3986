@@ -1,5 +1,5 @@
-import Testing
 import Standards
+import Testing
 
 @testable import RFC_3986
 

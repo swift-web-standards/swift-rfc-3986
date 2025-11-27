@@ -1,4 +1,5 @@
 import Testing
+
 @testable import RFC_3986
 
 @Suite
@@ -102,7 +103,7 @@ struct `RFC_3986 percentEncode()` {
         "test?query=value",
         "path/to/resource",
         "special!@#$%^&*()",
-        "🌍🚀✨"
+        "🌍🚀✨",
     ])
     func `Encode-decode round trip`(input: String) {
         let encoded = RFC_3986.percentEncode(input)
@@ -128,10 +129,10 @@ struct `RFC_3986 percentDecode()` {
     }
 
     @Test(arguments: [
-        ("hello%2", "hello%2"),      // Incomplete encoding
-        ("hello%G0", "hello%G0"),    // Non-hex digit
-        ("test%", "test%"),          // Incomplete at end
-        ("%ZZ", "%ZZ")               // Invalid hex digits
+        ("hello%2", "hello%2"),  // Incomplete encoding
+        ("hello%G0", "hello%G0"),  // Non-hex digit
+        ("test%", "test%"),  // Incomplete at end
+        ("%ZZ", "%ZZ"),  // Invalid hex digits
     ])
     func `Invalid percent-encoding returns original`(input: String, expected: String) {
         let decoded = RFC_3986.percentDecode(input)

@@ -16,7 +16,8 @@ extension RFC_3986.Error: CustomStringConvertible {
     public var description: String {
         switch self {
         case .invalidURI(let value):
-            return "Invalid URI: '\(value)'. URIs must follow RFC 3986 syntax and contain only ASCII characters."
+            return
+                "Invalid URI: '\(value)'. URIs must follow RFC 3986 syntax and contain only ASCII characters."
         case .invalidComponent(let component):
             return "Invalid URI component: '\(component)'"
         case .conversionFailed(let reason):
@@ -70,6 +71,18 @@ extension RFC_3986 {
 
         /// The URI string
         public var value: String { cache.value }
+    }
+}
+
+extension RFC_3986.URI {
+    /// Compares a URI to a string by comparing the URI's string value
+    public static func == <S: StringProtocol>(lhs: RFC_3986.URI, rhs: S) -> Bool {
+        lhs.value == rhs
+    }
+
+    /// Compares a string to a URI by comparing the URI's string value
+    public static func == <S: StringProtocol>(lhs: S, rhs: RFC_3986.URI) -> Bool {
+        lhs == rhs.value
     }
 }
 
@@ -155,12 +168,13 @@ extension RFC_3986.URI {
 
             // Parse scheme: ([^:/?#]+):
             if let colonIndex = remaining.firstIndex(of: ":"),
-               colonIndex > remaining.startIndex {
+                colonIndex > remaining.startIndex
+            {
                 let schemeCandidate = String(remaining[..<colonIndex])
                 // Verify no /, ?, or # appear before the colon
-                if !schemeCandidate.contains("/") &&
-                   !schemeCandidate.contains("?") &&
-                   !schemeCandidate.contains("#") {
+                if !schemeCandidate.contains("/") && !schemeCandidate.contains("?")
+                    && !schemeCandidate.contains("#")
+                {
                     scheme = schemeCandidate
                     remaining = String(remaining[remaining.index(after: colonIndex)...])
                 }
@@ -240,7 +254,6 @@ extension RFC_3986.URI {
         }
     }
 }
-
 
 // MARK: - Initialization
 
@@ -471,7 +484,7 @@ extension RFC_3986.URI {
     /// Example: `https://example.com:8080/path?query#fragment` → `https://example.com:8080`
     public var base: RFC_3986.URI? {
         guard let uriScheme = scheme,
-              let uriHost = host
+            let uriHost = host
         else { return nil }
 
         var baseString = "\(uriScheme.value)://\(uriHost.rawValue)"
@@ -517,9 +530,8 @@ extension RFC_3986.URI {
         // Remove default ports
         if let scheme = normalizedScheme, let port = normalizedPort {
             let isDefaultPort =
-                (scheme == "http" && port == 80) ||
-                (scheme == "https" && port == 443) ||
-                (scheme == "ftp" && port == 21)
+                (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
+                || (scheme == "ftp" && port == 21)
             if isDefaultPort {
                 normalizedPort = nil
             }
@@ -774,7 +786,10 @@ extension RFC_3986.URI {
     ///   - name: The query parameter name
     ///   - value: The query parameter value
     /// - Returns: A new URI with the appended query parameter
-    public func appendingQueryItem(name: some StringProtocol, value: (some StringProtocol)?) throws -> RFC_3986.URI {
+    public func appendingQueryItem(
+        name: some StringProtocol,
+        value: (some StringProtocol)?
+    ) throws -> RFC_3986.URI {
         var result = ""
 
         // Add scheme
@@ -1080,7 +1095,11 @@ extension RFC_3986 {
         guard string.allSatisfy({ $0.isASCII }) else { return false }
 
         // Reject strings with unencoded spaces or control characters
-        if string.contains(" ") || string.contains(where: { $0.isASCII && $0.asciiValue! < 0x20 || $0.asciiValue == 0x7F }) {
+        if string.contains(" ")
+            || string.contains(where: {
+                $0.isASCII && $0.asciiValue! < 0x20 || $0.asciiValue == 0x7F
+            })
+        {
             return false
         }
 

@@ -1,4 +1,3 @@
-
 // MARK: - URI Userinfo
 
 extension RFC_3986.URI {

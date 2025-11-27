@@ -1,4 +1,3 @@
-
 // MARK: - URI Query
 
 extension RFC_3986.URI {
@@ -155,7 +154,10 @@ extension RFC_3986.URI {
         ///   - value: The parameter value (nil for keys without values)
         /// - Returns: A new query with the parameter added
         /// - Throws: `RFC_3986.Error.invalidComponent` if the parameter is invalid
-        public func appending(key: some StringProtocol, value: (some StringProtocol)?) throws -> Query {
+        public func appending(
+            key: some StringProtocol,
+            value: (some StringProtocol)?
+        ) throws -> Query {
             var newParameters = parameters
             newParameters.append((String(key), value.map { String($0) }))
             return try Query(newParameters)

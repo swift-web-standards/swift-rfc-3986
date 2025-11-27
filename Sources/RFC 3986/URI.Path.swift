@@ -1,4 +1,3 @@
-
 // MARK: - URI Path
 
 extension RFC_3986.URI {

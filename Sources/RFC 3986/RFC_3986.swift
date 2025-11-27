@@ -1,4 +1,3 @@
-
 /// RFC 3986: Uniform Resource Identifier (URI) Generic Syntax
 ///
 /// This module implements Uniform Resource Identifiers (URIs)

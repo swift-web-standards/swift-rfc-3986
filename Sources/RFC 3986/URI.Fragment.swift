@@ -1,4 +1,3 @@
-
 // MARK: - URI Fragment
 
 extension RFC_3986.URI {

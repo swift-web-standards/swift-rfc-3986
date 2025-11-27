@@ -1,4 +1,5 @@
 import Testing
+
 @testable import RFC_3986
 
 @Suite

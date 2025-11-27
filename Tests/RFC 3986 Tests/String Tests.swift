@@ -1,4 +1,5 @@
 import Testing
+
 @testable import RFC_3986
 
 @Suite
@@ -7,7 +8,7 @@ struct `String uri property` {
     @Test(arguments: [
         ("#fragment", nil as String?, nil as String?, "fragment"),
         ("#results", nil as String?, nil as String?, "results"),
-        ("#", nil as String?, nil as String?, "")
+        ("#", nil as String?, nil as String?, ""),
     ])
     func `Fragment-only URI`(
         input: String,
@@ -25,7 +26,7 @@ struct `String uri property` {
     @Test(arguments: [
         ("?query=value", "query=value"),
         ("?key=value&foo=bar", "key=value&foo=bar"),
-        ("?", "")
+        ("?", ""),
     ])
     func `Query-only URI`(input: String, expectedQuery: String) {
         let uri = input.uri
@@ -38,7 +39,7 @@ struct `String uri property` {
     @Test(arguments: [
         ("https://user:pass@example.com", "user", "pass" as String?, "example.com"),
         ("http://admin:secret@localhost", "admin", "secret" as String?, "localhost"),
-        ("ftp://john@example.com", "john", nil as String?, "example.com")
+        ("ftp://john@example.com", "john", nil as String?, "example.com"),
     ])
     func `URI with userinfo`(
         input: String,
@@ -70,7 +71,7 @@ struct `String uri property` {
     @Test(arguments: [
         "not a valid uri 😀",
         "https://例え.jp",  // Non-ASCII host
-        "http://host with spaces.com"
+        "http://host with spaces.com",
     ])
     func `Invalid URI returns nil`(input: String) {
         #expect(input.uri == nil)
