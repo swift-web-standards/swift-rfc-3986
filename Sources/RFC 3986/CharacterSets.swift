@@ -1,5 +1,3 @@
-import Standards
-
 extension RFC_3986 {
     /// Character sets defined in RFC 3986
     ///

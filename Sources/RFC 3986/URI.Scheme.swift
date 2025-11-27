@@ -1,5 +1,3 @@
-import INCITS_4_1986
-
 // MARK: - URI Scheme
 
 extension RFC_3986.URI {
