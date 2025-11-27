@@ -55,12 +55,11 @@ extension RFC_3986.URI.Userinfo {
     /// ```swift
     /// let userinfo = try RFC_3986.URI.Userinfo("user:password")
     /// ```
-    public init(_ rawValue: some StringProtocol) throws {
+    public init(_ rawValue: String) throws {
         // Validate that userinfo contains only allowed characters
         // Per RFC 3986: unreserved / pct-encoded / sub-delims / ":"
-        let stringValue = String(rawValue)
-        try Self.validate(stringValue)
-        self.rawValue = stringValue
+        try Self.validate(rawValue)
+        self.rawValue = rawValue
     }
 
     /// Creates a userinfo component without validation
