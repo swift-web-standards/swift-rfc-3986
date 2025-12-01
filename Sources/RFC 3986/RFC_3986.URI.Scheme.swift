@@ -54,7 +54,13 @@ extension RFC_3986.URI {
 // MARK: - Serializable
 
 extension RFC_3986.URI.Scheme: UInt8.ASCII.Serializable {
-    public static let serialize: @Sendable (Self) -> [UInt8] = [UInt8].init
+    /// Serialize scheme to ASCII bytes
+    public static func serialize<Buffer: RangeReplaceableCollection>(
+        ascii scheme: Self,
+        into buffer: inout Buffer
+    ) where Buffer.Element == UInt8 {
+        buffer.append(contentsOf: scheme.rawValue.utf8)
+    }
 
     /// Parses scheme from ASCII bytes (CANONICAL PRIMITIVE)
     ///
@@ -107,31 +113,6 @@ extension RFC_3986.URI.Scheme: UInt8.ASCII.Serializable {
 
         // Normalize to lowercase per RFC 3986 Section 6.2.2.1
         self.init(__unchecked: (), rawValue: String(decoding: bytes, as: UTF8.self))
-    }
-}
-
-// MARK: - Byte Serialization
-
-extension [UInt8] {
-    /// Creates ASCII byte representation of an RFC 3986 URI scheme
-    ///
-    /// This is the canonical serialization of schemes to bytes.
-    /// RFC 3986 schemes are ASCII-only by definition.
-    ///
-    /// ## Category Theory
-    ///
-    /// This is the most universal serialization (natural transformation):
-    /// - **Domain**: RFC_3986.URI.Scheme (structured data)
-    /// - **Codomain**: [UInt8] (ASCII bytes)
-    ///
-    /// String representation is derived as composition:
-    /// ```
-    /// Scheme → [UInt8] (ASCII) → String (UTF-8 interpretation)
-    /// ```
-    ///
-    /// - Parameter scheme: The scheme to serialize
-    public init(_ scheme: RFC_3986.URI.Scheme) {
-        self = Array(scheme.rawValue.utf8)
     }
 }
 

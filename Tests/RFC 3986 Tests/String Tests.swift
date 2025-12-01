@@ -31,7 +31,7 @@ struct `String uri property` {
     func `Query-only URI`(input: String, expectedQuery: String) {
         let uri = input.uri
         #expect(uri != nil)
-        #expect(uri?.query?.string == expectedQuery)
+        #expect(uri?.query?.description == expectedQuery)
         #expect(uri?.scheme == nil)
         #expect(uri?.host == nil)
     }
@@ -63,8 +63,8 @@ struct `String uri property` {
         #expect(uri?.userinfo?.password == "pass")
         #expect(uri?.host?.rawValue == "example.com")
         #expect(uri?.port == 8080)
-        #expect(uri?.path?.string == "/path")
-        #expect(uri?.query?.string == "query=value")
+        #expect(uri?.path?.description == "/path")
+        #expect(uri?.query?.description == "query=value")
         #expect(uri?.fragment?.value == "fragment")
     }
 

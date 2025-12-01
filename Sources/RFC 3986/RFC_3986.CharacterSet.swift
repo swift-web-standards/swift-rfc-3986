@@ -159,7 +159,227 @@ extension RFC_3986.CharacterSet {
     public static let fragment: Self = query
 }
 
-// MARK: - RFC 3986 Percent Encoding Functions
+// MARK: - ByteSet for Efficient Byte-Level Operations
+
+extension RFC_3986 {
+    /// A set of ASCII bytes for efficient percent-encoding operations
+    ///
+    /// This is a byte-level equivalent of `CharacterSet` optimized for
+    /// high-performance encoding/decoding operations on `[UInt8]` buffers.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let allowed = RFC_3986.ByteSet.unreserved
+    /// if allowed.contains(0x41) { /* 'A' is unreserved */ }
+    /// ```
+    public struct ByteSet: Sendable {
+        /// Bitmap for bytes 0-63
+        @usableFromInline
+        let low: UInt64
+        /// Bitmap for bytes 64-127
+        @usableFromInline
+        let high: UInt64
+
+        /// Creates a ByteSet from a bitmap pair
+        @inlinable
+        public init(low: UInt64, high: UInt64) {
+            self.low = low
+            self.high = high
+        }
+
+        /// Creates a ByteSet from a string of ASCII characters
+        @inlinable
+        public init(ascii characters: String) {
+            var lo: UInt64 = 0
+            var hi: UInt64 = 0
+            for byte in characters.utf8 where byte < 128 {
+                if byte < 64 {
+                    lo |= 1 << UInt64(byte)
+                } else {
+                    hi |= 1 << UInt64(byte - 64)
+                }
+            }
+            self.low = lo
+            self.high = hi
+        }
+
+        /// Checks if the set contains the given byte
+        @inlinable
+        public func contains(_ byte: UInt8) -> Bool {
+            guard byte < 128 else { return false }
+            if byte < 64 {
+                return (low & (1 << UInt64(byte))) != 0
+            } else {
+                return (high & (1 << UInt64(byte - 64))) != 0
+            }
+        }
+
+        /// Returns the union of two ByteSets
+        @inlinable
+        public func union(_ other: ByteSet) -> ByteSet {
+            ByteSet(low: low | other.low, high: high | other.high)
+        }
+
+        /// Returns the difference (self - other)
+        @inlinable
+        public func subtracting(_ other: ByteSet) -> ByteSet {
+            ByteSet(low: low & ~other.low, high: high & ~other.high)
+        }
+    }
+}
+
+extension RFC_3986.ByteSet {
+    /// Unreserved characters per RFC 3986 Section 2.3
+    ///
+    /// `A-Z a-z 0-9 - . _ ~`
+    public static let unreserved = RFC_3986.ByteSet(
+        ascii: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
+    )
+
+    /// Reserved characters per RFC 3986 Section 2.2
+    ///
+    /// `: / ? # [ ] @ ! $ & ' ( ) * + , ; =`
+    public static let reserved = RFC_3986.ByteSet(
+        ascii: ":/?#[]@!$&'()*+,;="
+    )
+
+    /// General delimiters per RFC 3986 Section 2.2
+    ///
+    /// `: / ? # [ ] @`
+    public static let genDelims = RFC_3986.ByteSet(
+        ascii: ":/?#[]@"
+    )
+
+    /// Sub-delimiters per RFC 3986 Section 2.2
+    ///
+    /// `! $ & ' ( ) * + , ; =`
+    public static let subDelims = RFC_3986.ByteSet(
+        ascii: "!$&'()*+,;="
+    )
+
+    /// Characters allowed in path segments per RFC 3986 Section 3.3
+    ///
+    /// unreserved + sub-delims + `:` + `@`
+    public static let pathSegment = unreserved.union(subDelims).union(RFC_3986.ByteSet(ascii: ":@"))
+
+    /// Characters allowed in query per RFC 3986 Section 3.4
+    ///
+    /// pathSegment + `/` + `?`
+    public static let query = pathSegment.union(RFC_3986.ByteSet(ascii: "/?"))
+}
+
+// MARK: - Byte-Level Percent Encoding
+
+extension RFC_3986 {
+    /// Percent-encodes bytes according to RFC 3986 Section 2.1
+    ///
+    /// Bytes not in the allowed set are encoded as `%HH` where HH is
+    /// the uppercase hexadecimal representation.
+    ///
+    /// - Parameters:
+    ///   - bytes: The bytes to encode
+    ///   - allowed: The set of bytes that should not be encoded
+    /// - Returns: The percent-encoded bytes
+    @inlinable
+    public static func percentEncode<Bytes: Collection>(
+        _ bytes: Bytes,
+        allowing allowed: ByteSet = .unreserved
+    ) -> [UInt8] where Bytes.Element == UInt8 {
+        var result: [UInt8] = []
+        result.reserveCapacity(bytes.count * 3)
+
+        for byte in bytes {
+            if allowed.contains(byte) {
+                result.append(byte)
+            } else {
+                result.append(UInt8(ascii: "%"))
+                result.append(hexDigit(byte >> 4))
+                result.append(hexDigit(byte & 0x0F))
+            }
+        }
+        return result
+    }
+
+    /// Percent-encodes bytes into a buffer according to RFC 3986 Section 2.1
+    ///
+    /// - Parameters:
+    ///   - bytes: The bytes to encode
+    ///   - buffer: The buffer to append encoded bytes to
+    ///   - allowed: The set of bytes that should not be encoded
+    @inlinable
+    public static func percentEncode<Bytes: Collection, Buffer: RangeReplaceableCollection>(
+        _ bytes: Bytes,
+        into buffer: inout Buffer,
+        allowing allowed: ByteSet = .unreserved
+    ) where Bytes.Element == UInt8, Buffer.Element == UInt8 {
+        for byte in bytes {
+            if allowed.contains(byte) {
+                buffer.append(byte)
+            } else {
+                buffer.append(UInt8(ascii: "%"))
+                buffer.append(hexDigit(byte >> 4))
+                buffer.append(hexDigit(byte & 0x0F))
+            }
+        }
+    }
+
+    /// Percent-decodes bytes according to RFC 3986 Section 2.1
+    ///
+    /// Replaces percent-encoded octets (`%HH`) with their byte values.
+    ///
+    /// - Parameter bytes: The percent-encoded bytes
+    /// - Returns: The decoded bytes
+    @inlinable
+    public static func percentDecode<Bytes: Collection>(
+        _ bytes: Bytes
+    ) -> [UInt8] where Bytes.Element == UInt8 {
+        var result: [UInt8] = []
+        result.reserveCapacity(bytes.count)
+
+        var iterator = bytes.makeIterator()
+        while let byte = iterator.next() {
+            if byte == UInt8(ascii: "%"),
+               let hi = iterator.next(),
+               let lo = iterator.next(),
+               let hiVal = hexDigitValue(hi),
+               let loVal = hexDigitValue(lo)
+            {
+                result.append((hiVal << 4) | loVal)
+            } else {
+                result.append(byte)
+            }
+        }
+        return result
+    }
+
+    /// Converts a nibble (0-15) to an uppercase hex digit byte
+    @inlinable
+    static func hexDigit(_ nibble: UInt8) -> UInt8 {
+        if nibble < 10 {
+            return UInt8(ascii: "0") + nibble
+        } else {
+            return UInt8(ascii: "A") + nibble - 10
+        }
+    }
+
+    /// Converts a hex digit byte to its value (0-15), or nil if invalid
+    @inlinable
+    static func hexDigitValue(_ byte: UInt8) -> UInt8? {
+        switch byte {
+        case UInt8(ascii: "0")...UInt8(ascii: "9"):
+            return byte - UInt8(ascii: "0")
+        case UInt8(ascii: "A")...UInt8(ascii: "F"):
+            return byte - UInt8(ascii: "A") + 10
+        case UInt8(ascii: "a")...UInt8(ascii: "f"):
+            return byte - UInt8(ascii: "a") + 10
+        default:
+            return nil
+        }
+    }
+}
+
+// MARK: - RFC 3986 String Percent Encoding Functions
 
 extension RFC_3986 {
     /// Percent-encodes a string according to RFC 3986 Section 2.1

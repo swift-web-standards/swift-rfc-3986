@@ -45,7 +45,12 @@ extension RFC_3986.URI {
 // MARK: - Serializable
 
 extension RFC_3986.URI.Port: UInt8.ASCII.Serializable {
-    public static let serialize: @Sendable (Self) -> [UInt8] = [UInt8].init
+    static public func serialize<Buffer>(
+        ascii port: RFC_3986.URI.Port,
+        into buffer: inout Buffer
+    ) where Buffer : RangeReplaceableCollection, Buffer.Element == UInt8 {
+        buffer.append(contentsOf: Array(String(port.value).utf8))
+    }
 
     /// Parses port from ASCII bytes (CANONICAL PRIMITIVE)
     ///
@@ -90,26 +95,6 @@ extension RFC_3986.URI.Port: UInt8.ASCII.Serializable {
         }
 
         self.init(__unchecked: (), value: UInt16(result))
-    }
-}
-
-// MARK: - Byte Serialization
-
-extension [UInt8] {
-    /// Creates ASCII byte representation of an RFC 3986 URI port
-    ///
-    /// This is the canonical serialization of ports to bytes.
-    /// RFC 3986 ports are ASCII digit sequences.
-    ///
-    /// ## Category Theory
-    ///
-    /// This is the most universal serialization (natural transformation):
-    /// - **Domain**: RFC_3986.URI.Port (structured data)
-    /// - **Codomain**: [UInt8] (ASCII bytes)
-    ///
-    /// - Parameter port: The port to serialize
-    public init(_ port: RFC_3986.URI.Port) {
-        self = Array(String(port.value).utf8)
     }
 }
 

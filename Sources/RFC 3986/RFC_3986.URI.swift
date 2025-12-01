@@ -1,3 +1,5 @@
+public import INCITS_4_1986
+
 extension RFC_3986 {
     /// Errors that can occur when working with URIs
     public enum Error: Swift.Error, Hashable, Sendable {
@@ -117,7 +119,9 @@ extension RFC_3986.URI {
         }()
 
         lazy var path: Path? = {
-            guard let pathString = components.path, !pathString.isEmpty else { return nil }
+            guard let pathString = components.path else { return nil }
+            // Empty paths are valid in RFC 3986 - they serialize to ""
+            // Only return nil if there was no path component at all
             return try? Path(pathString)
         }()
 
@@ -255,6 +259,46 @@ extension RFC_3986.URI {
     }
 }
 
+// MARK: - Serializable
+
+extension RFC_3986.URI: UInt8.ASCII.Serializable {
+    static public func serialize<Buffer>(
+        ascii uri: RFC_3986.URI,
+        into buffer: inout Buffer
+    ) where Buffer : RangeReplaceableCollection, Buffer.Element == UInt8 {
+        buffer.append(contentsOf: uri.value.utf8)
+    }
+
+    /// Parses URI from ASCII bytes (CANONICAL PRIMITIVE)
+    ///
+    /// This is the primitive parser that works at the byte level.
+    /// RFC 3986 URIs follow the generic syntax: scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    ///
+    /// ## Category Theory
+    ///
+    /// This is the fundamental parsing transformation:
+    /// - **Domain**: [UInt8] (ASCII bytes)
+    /// - **Codomain**: RFC_3986.URI (structured data)
+    ///
+    /// ## RFC 3986 Section 3
+    ///
+    /// ```
+    /// URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    /// hier-part = "//" authority path-abempty / path-absolute / path-rootless / path-empty
+    /// ```
+    ///
+    /// - Parameter bytes: The ASCII byte representation of the URI
+    /// - Throws: `RFC_3986.Error` if the bytes are malformed
+    public init<Bytes: Collection>(ascii bytes: Bytes, in context: Void) throws(RFC_3986.Error)
+    where Bytes.Element == UInt8 {
+        let string = String(decoding: bytes, as: UTF8.self)
+        guard RFC_3986.isValidURI(string) else {
+            throw RFC_3986.Error.invalidURI(string)
+        }
+        self.init(__unchecked: (), value: string)
+    }
+}
+
 // MARK: - Initialization
 
 extension RFC_3986.URI {
@@ -270,6 +314,21 @@ extension RFC_3986.URI {
         self.cache = Cache(value: stringValue)
     }
 
+    /// Creates a URI WITHOUT validation
+    ///
+    /// **Warning**: Bypasses RFC 3986 validation.
+    /// Only use with compile-time constants or pre-validated values.
+    ///
+    /// - Parameters:
+    ///   - unchecked: Void parameter to prevent accidental use
+    ///   - value: The URI string (unchecked)
+    init(
+        __unchecked _: Void,
+        value: String
+    ) {
+        self.cache = Cache(value: value)
+    }
+
     /// Creates a URI from a string without validation
     ///
     /// This is an internal optimization for cases where validation has already
@@ -280,7 +339,7 @@ extension RFC_3986.URI {
     ///
     /// - Parameter value: The URI reference string (must be valid, not validated)
     public init(unchecked value: String) {
-        self.cache = Cache(value: value)
+        self.init(__unchecked: (), value: value)
     }
 
     /// Creates a URI from validated RFC 3986 component types
@@ -328,10 +387,10 @@ extension RFC_3986.URI {
             uriString += ":\(port.value)"
         }
 
-        uriString += path.string
+        uriString += path.description
 
         if let query = query {
-            uriString += "?\(query.string)"
+            uriString += "?\(query.description)"
         }
 
         if let fragment = fragment {
@@ -500,9 +559,9 @@ extension RFC_3986.URI {
     public var pathAndQuery: String? {
         guard let uriPath = path else { return nil }
         if let uriQuery = query {
-            return "\(uriPath.string)?\(uriQuery.string)"
+            return "\(uriPath.description)?\(uriQuery.description)"
         }
-        return uriPath.string
+        return uriPath.description
     }
 }
 
@@ -523,8 +582,8 @@ extension RFC_3986.URI {
         let normalizedScheme = scheme?.value.lowercased()
         let normalizedHost = host?.rawValue.lowercased()
         var normalizedPort = port
-        var normalizedPath = path?.string
-        var normalizedQuery = query?.string
+        var normalizedPath = path?.description
+        var normalizedQuery = query?.description
         let normalizedFragment = fragment?.value
 
         // Remove default ports
@@ -589,8 +648,8 @@ extension RFC_3986.URI {
     ///
     /// - Returns: A new URI with normalized percent-encoding
     public func normalizePercentEncoding() -> RFC_3986.URI {
-        var normalizedPath = path?.string
-        var normalizedQuery = query?.string
+        var normalizedPath = path?.description
+        var normalizedQuery = query?.description
 
         // Normalize percent-encoding in path
         if let pathString = normalizedPath {
@@ -678,10 +737,10 @@ extension RFC_3986.URI {
                 result += ":\(refPort)"
             }
             if let refPath = refURI.path {
-                result += refPath.string
+                result += refPath.description
             }
             if let refQuery = refURI.query {
-                result += "?\(refQuery.string)"
+                result += "?\(refQuery.description)"
             }
             if let refFragment = refURI.fragment {
                 result += "#\(refFragment.value)"
@@ -702,34 +761,37 @@ extension RFC_3986.URI {
         }
 
         // Merge paths according to RFC 3986 Section 5.2.3
-        let refPath = refURI.path?.string
+        let refPath = refURI.path?.description
+        var mergedPath = ""
         if let refPath = refPath, !refPath.isEmpty {
             if refPath.hasPrefix("/") {
                 // Absolute path - use reference path as-is
-                result += refPath
+                mergedPath = refPath
             } else {
                 // Relative path - merge with base
-                if let basePath = path?.string {
+                if let basePath = path?.description {
                     // Remove last segment from base path
                     if let lastSlash = basePath.lastIndex(of: "/") {
-                        result += String(basePath[...lastSlash])
+                        mergedPath = String(basePath[...lastSlash]) + refPath
+                    } else {
+                        mergedPath = refPath
                     }
-                    result += refPath
                 } else {
-                    result += "/\(refPath)"
+                    mergedPath = "/\(refPath)"
                 }
             }
-            // Remove dot segments from the merged path
-            result = RFC_3986.removeDotSegments(from: result)
+            // Remove dot segments from the merged path only (not the whole URI)
+            mergedPath = RFC_3986.removeDotSegments(from: mergedPath)
+            result += mergedPath
         } else if let basePath = path {
-            result += basePath.string
+            result += basePath.description
         }
 
         // Use reference query if present, otherwise use base query
         if let refQuery = refURI.query {
-            result += "?\(refQuery.string)"
+            result += "?\(refQuery.description)"
         } else if refPath == nil, let baseQuery = query {
-            result += "?\(baseQuery.string)"
+            result += "?\(baseQuery.description)"
         }
 
         // Always use reference fragment
@@ -748,7 +810,7 @@ extension RFC_3986.URI {
     ///
     /// - Parameter component: The path component to append
     /// - Returns: A new URI with the appended path component
-    public func appendingPathComponent(_ component: some StringProtocol) throws -> RFC_3986.URI {
+    public func appendingPathComponent(_ component: some StringProtocol) -> RFC_3986.URI {
         var result = ""
 
         // Add scheme
@@ -765,19 +827,20 @@ extension RFC_3986.URI {
         }
 
         // Append to path
-        let currentPath = path?.string ?? ""
+        let currentPath = path?.description ?? ""
         let separator = currentPath.hasSuffix("/") ? "" : "/"
         result += currentPath + separator + component
 
         // Add query and fragment
         if let uriQuery = query {
-            result += "?\(uriQuery.string)"
+            result += "?\(uriQuery.description)"
         }
         if let uriFragment = fragment {
             result += "#\(uriFragment.value)"
         }
 
-        return try RFC_3986.URI(result)
+        // Use unchecked init since components are already validated
+        return RFC_3986.URI(unchecked: result)
     }
 
     /// Creates a new URI by appending a query parameter
@@ -789,7 +852,7 @@ extension RFC_3986.URI {
     public func appendingQueryItem(
         name: some StringProtocol,
         value: (some StringProtocol)?
-    ) throws -> RFC_3986.URI {
+    ) -> RFC_3986.URI {
         var result = ""
 
         // Add scheme
@@ -807,14 +870,14 @@ extension RFC_3986.URI {
 
         // Add path
         if let uriPath = path {
-            result += uriPath.string
+            result += uriPath.description
         }
 
         // Add query with new item
         let encodedName = RFC_3986.percentEncode(String(name), allowing: .query)
         let encodedValue = value.map { RFC_3986.percentEncode(String($0), allowing: .query) }
 
-        if let currentQuery = query?.string {
+        if let currentQuery = query?.description {
             result += "?\(currentQuery)&\(encodedName)"
             if let value = encodedValue {
                 result += "=\(value)"
@@ -831,14 +894,15 @@ extension RFC_3986.URI {
             result += "#\(uriFragment.value)"
         }
 
-        return try RFC_3986.URI(result)
+        // Use unchecked init since components are already validated
+        return RFC_3986.URI(unchecked: result)
     }
 
     /// Creates a new URI by setting the fragment
     ///
     /// - Parameter fragment: The fragment to set
     /// - Returns: A new URI with the specified fragment
-    public func settingFragment(_ fragment: Fragment?) throws -> RFC_3986.URI {
+    public func settingFragment(_ fragment: Fragment?) -> RFC_3986.URI {
         var result = ""
 
         // Add scheme
@@ -856,12 +920,12 @@ extension RFC_3986.URI {
 
         // Add path
         if let uriPath = path {
-            result += uriPath.string
+            result += uriPath.description
         }
 
         // Add query
         if let uriQuery = query {
-            result += "?\(uriQuery.string)"
+            result += "?\(uriQuery.description)"
         }
 
         // Add new fragment
@@ -869,7 +933,8 @@ extension RFC_3986.URI {
             result += "#\(newFragment.value)"
         }
 
-        return try RFC_3986.URI(result)
+        // Use unchecked init since components are already validated
+        return RFC_3986.URI(unchecked: result)
     }
 }
 

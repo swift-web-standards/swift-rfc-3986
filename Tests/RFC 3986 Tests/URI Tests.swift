@@ -212,14 +212,14 @@ struct `URI Component Parsing` {
     func `Parse path`() throws {
         let string = "https://example.com/path/to/resource"
         let uri = try RFC_3986.URI(string)
-        #expect(uri.path?.string == "/path/to/resource")
+        #expect(uri.path?.description == "/path/to/resource")
     }
 
     @Test
     func `Parse query`() throws {
         let string = "https://example.com/path?key=value&foo=bar"
         let uri = try RFC_3986.URI(string)
-        #expect(uri.query?.string == "key=value&foo=bar")
+        #expect(uri.query?.description == "key=value&foo=bar")
     }
 
     @Test
@@ -236,8 +236,8 @@ struct `URI Component Parsing` {
         #expect(uri.scheme?.value == "https")
         #expect(uri.host?.rawValue == "example.com")
         #expect(uri.port == 8080)
-        #expect(uri.path?.string == "/path")
-        #expect(uri.query?.string == "query=value")
+        #expect(uri.path?.description == "/path")
+        #expect(uri.query?.description == "query=value")
         #expect(uri.fragment?.value == "section")
     }
 }
@@ -307,7 +307,7 @@ struct `URI normalizePercentEncoding()` {
         let normalized = uri.normalizePercentEncoding()
 
         // Hyphen is unreserved, should be decoded
-        #expect(normalized.path?.string == "/hello-world")
+        #expect(normalized.path?.description == "/hello-world")
         #expect(normalized.value == "https://example.com/hello-world")
     }
 
@@ -317,7 +317,7 @@ struct `URI normalizePercentEncoding()` {
         let normalized = uri.normalizePercentEncoding()
 
         // = is reserved in query, should stay encoded but uppercase
-        #expect(normalized.query?.string.contains("%3D") == true)
+        #expect(normalized.query?.description.contains("%3D") == true)
     }
 
     @Test
@@ -347,7 +347,7 @@ struct `URI normalizePercentEncoding()` {
         let normalized = uri.normalizePercentEncoding()
 
         // Both should be normalized
-        #expect(normalized.path?.string == "/test-path")
-        #expect(normalized.query?.string.contains("key-name") == true)
+        #expect(normalized.path?.description == "/test-path")
+        #expect(normalized.query?.description.contains("key-name") == true)
     }
 }

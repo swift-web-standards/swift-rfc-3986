@@ -71,8 +71,22 @@ extension RFC_3986.URI {
 // MARK: - Serializable
 
 extension RFC_3986.URI.Path: UInt8.ASCII.Serializable {
-    public static let serialize: @Sendable (Self) -> [UInt8] = [UInt8].init
+    public static func serialize<Buffer>(
+        ascii path: RFC_3986.URI.Path,
+        into buffer: inout Buffer
+    ) where Buffer : RangeReplaceableCollection, Buffer.Element == UInt8 {
+        if path.isAbsolute {
+            buffer.append(.ascii.solidus)
+        }
 
+        for (index, segment) in path.segments.enumerated() {
+            if index > 0 {
+                buffer.append(.ascii.solidus)
+            }
+            buffer.append(contentsOf: segment.utf8)
+        }
+    }
+    
     /// Parses path from ASCII bytes (CANONICAL PRIMITIVE)
     ///
     /// This is the primitive parser that works at the byte level.
@@ -181,38 +195,6 @@ extension RFC_3986.URI.Path: UInt8.ASCII.Serializable {
     }
 }
 
-// MARK: - Byte Serialization
-
-extension [UInt8] {
-    /// Creates ASCII byte representation of an RFC 3986 URI path
-    ///
-    /// This is the canonical serialization of paths to bytes.
-    ///
-    /// ## Category Theory
-    ///
-    /// This is the most universal serialization (natural transformation):
-    /// - **Domain**: RFC_3986.URI.Path (structured data)
-    /// - **Codomain**: [UInt8] (ASCII bytes)
-    ///
-    /// - Parameter path: The path to serialize
-    public init(_ path: RFC_3986.URI.Path) {
-        var bytes: [UInt8] = []
-
-        if path.isAbsolute {
-            bytes.append(0x2F)  // '/'
-        }
-
-        for (index, segment) in path.segments.enumerated() {
-            if index > 0 {
-                bytes.append(0x2F)  // '/'
-            }
-            bytes.append(contentsOf: segment.utf8)
-        }
-
-        self = bytes
-    }
-}
-
 // MARK: - Public Initializers
 
 extension RFC_3986.URI.Path {
@@ -249,14 +231,6 @@ extension RFC_3986.URI.Path {
 // MARK: - Convenience Properties
 
 extension RFC_3986.URI.Path {
-    /// The string representation of the path
-    ///
-    /// Returns the path in the form "/segment1/segment2" for absolute paths
-    /// or "segment1/segment2" for relative paths.
-    public var string: String {
-        String(decoding: [UInt8](self), as: UTF8.self)
-    }
-
     /// Returns true if this path is empty (no segments)
     public var isEmpty: Bool {
         segments.isEmpty
@@ -351,11 +325,7 @@ extension RFC_3986.URI.Path: ExpressibleByArrayLiteral {
 
 // MARK: - CustomStringConvertible
 
-extension RFC_3986.URI.Path: CustomStringConvertible {
-    public var description: String {
-        string
-    }
-}
+extension RFC_3986.URI.Path: CustomStringConvertible {}
 
 // MARK: - Codable
 
@@ -375,6 +345,35 @@ extension RFC_3986.URI.Path: Codable {
 
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(string)
+        try container.encode(description)
+    }
+}
+
+// MARK: - Byte Serialization
+
+extension [UInt8] {
+    /// Creates ASCII byte representation of an RFC 3986 URI path
+    ///
+    /// ## Category Theory
+    ///
+    /// Natural transformation: RFC_3986.URI.Path → [UInt8]
+    /// ```
+    /// Path → [UInt8] (ASCII) → String (UTF-8)
+    /// ```
+    public init(_ path: RFC_3986.URI.Path) {
+        var bytes: [UInt8] = []
+
+        if path.isAbsolute {
+            bytes.append(0x2F)  // '/'
+        }
+
+        for (index, segment) in path.segments.enumerated() {
+            if index > 0 {
+                bytes.append(0x2F)  // '/'
+            }
+            bytes.append(contentsOf: segment.utf8)
+        }
+
+        self = bytes
     }
 }

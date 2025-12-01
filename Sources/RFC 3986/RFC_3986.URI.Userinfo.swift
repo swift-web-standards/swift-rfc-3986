@@ -65,7 +65,13 @@ extension RFC_3986.URI {
 // MARK: - Serializable
 
 extension RFC_3986.URI.Userinfo: UInt8.ASCII.Serializable {
-    public static let serialize: @Sendable (Self) -> [UInt8] = [UInt8].init
+    /// Serialize userinfo to ASCII bytes
+    public static func serialize<Buffer: RangeReplaceableCollection>(
+        ascii userinfo: Self,
+        into buffer: inout Buffer
+    ) where Buffer.Element == UInt8 {
+        buffer.append(contentsOf: userinfo.rawValue.utf8)
+    }
 
     /// Parses userinfo from ASCII bytes (CANONICAL PRIMITIVE)
     ///
@@ -146,25 +152,6 @@ extension RFC_3986.URI.Userinfo: UInt8.ASCII.Serializable {
         }
 
         self.init(__unchecked: (), rawValue: String(decoding: bytes, as: UTF8.self))
-    }
-}
-
-// MARK: - Byte Serialization
-
-extension [UInt8] {
-    /// Creates ASCII byte representation of an RFC 3986 URI userinfo
-    ///
-    /// This is the canonical serialization of userinfo to bytes.
-    ///
-    /// ## Category Theory
-    ///
-    /// This is the most universal serialization (natural transformation):
-    /// - **Domain**: RFC_3986.URI.Userinfo (structured data)
-    /// - **Codomain**: [UInt8] (ASCII bytes)
-    ///
-    /// - Parameter userinfo: The userinfo to serialize
-    public init(_ userinfo: RFC_3986.URI.Userinfo) {
-        self = Array(userinfo.rawValue.utf8)
     }
 }
 

@@ -64,7 +64,12 @@ extension RFC_3986.URI {
 // MARK: - Serializable
 
 extension RFC_3986.URI.Fragment: UInt8.ASCII.Serializable {
-    public static let serialize: @Sendable (Self) -> [UInt8] = [UInt8].init
+    public static func serialize<Buffer: RangeReplaceableCollection>(
+        ascii fragment: RFC_3986.URI.Fragment,
+        into buffer: inout Buffer
+    ) where Buffer.Element == UInt8 {
+        buffer.append(contentsOf: fragment.rawValue.utf8)
+    }
 
     /// Parses fragment from ASCII bytes (CANONICAL PRIMITIVE)
     ///
@@ -102,25 +107,6 @@ extension RFC_3986.URI.Fragment: UInt8.ASCII.Serializable {
         }
 
         self.init(__unchecked: (), rawValue: String(decoding: bytes, as: UTF8.self))
-    }
-}
-
-// MARK: - Byte Serialization
-
-extension [UInt8] {
-    /// Creates ASCII byte representation of an RFC 3986 URI fragment
-    ///
-    /// This is the canonical serialization of fragments to bytes.
-    ///
-    /// ## Category Theory
-    ///
-    /// This is the most universal serialization (natural transformation):
-    /// - **Domain**: RFC_3986.URI.Fragment (structured data)
-    /// - **Codomain**: [UInt8] (ASCII bytes)
-    ///
-    /// - Parameter fragment: The fragment to serialize
-    public init(_ fragment: RFC_3986.URI.Fragment) {
-        self = Array(fragment.rawValue.utf8)
     }
 }
 

@@ -120,7 +120,7 @@ struct `README Verification` {
         let string = "https://example.com/path/to/resource"
         let uri = try RFC_3986.URI(string)
 
-        #expect(uri.path?.string == "/path/to/resource")
+        #expect(uri.path?.description == "/path/to/resource")
     }
 
     @Test
@@ -129,7 +129,7 @@ struct `README Verification` {
         let string = "https://example.com?key=value"
         let uri = try RFC_3986.URI(string)
 
-        #expect(uri.query?.string == "key=value")
+        #expect(uri.query?.description == "key=value")
     }
 
     @Test
